@@ -6,35 +6,49 @@ import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
+FILE_PATH = os.getcwd()
+SRC_PATH = os.path.dirname(__file__)
 VALID_TYPES = ["image/png", "image/jpeg"]
 
 def get_state():
-    listing = [(f, mimetypes.guess_type(f)[0]) for f in os.listdir(".")]
-    files = [
-        {
-            "path": f,
-            "type": t,
-        } 
-        for f, t in listing if t in VALID_TYPES
-    ]
+    all_files = os.listdir(FILE_PATH)
+    listing = [(f, mimetypes.guess_type(f)[0]) for f in all_files]
+    files = [{ "path": f"/files/{f}", "type": t } for f, t in listing if t in VALID_TYPES]
 
-    # with open(".CS_Store", "r") as f:
-    #     layout = json.loads(f.read())
+    layout = {}
+    if ".CS_Store" in all_files:
+        with open(f"{FILE_PATH}/.CS_Store", "r") as f:
+            layout = json.loads(f.read())
 
-    # print(layout)
-    
-    return { "files": files, "layout": [] }
+    return { 
+        "files": files, 
+        "layout": layout,
+        "path": FILE_PATH,
+    }
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
     def on_message(self, message):
-        if message == "initialize":
+        message = json.loads(message)
+        if message["type"] == "initialize":
             self.write_message(json.dumps(get_state()))
 
+        elif message["type"] ==  "layout":
+            with open(f"{FILE_PATH}/.CS_Store", "w") as f:
+                f.write(json.dumps(message["layout"]))
+
+
 if __name__ == "__main__":
+    print(FILE_PATH, SRC_PATH)
     app = tornado.web.Application([
-        ("/ws", WSHandler),
-        ("/(.*)", tornado.web.StaticFileHandler, {"path": "./", "default_filename": "index.html"}), 
+        (r'/ws', WSHandler),
+        (r'/static/(.*)', tornado.web.StaticFileHandler, {
+            "path": SRC_PATH,
+            "default_filename": "index.html"
+        }), 
+        (r'/files/(.*)', tornado.web.StaticFileHandler, {
+            "path": FILE_PATH
+        }), 
     ])
     app.listen(1234)
     tornado.ioloop.IOLoop.current().start()

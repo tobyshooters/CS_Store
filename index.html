@@ -2,6 +2,9 @@
     body {
         font-family: monospace;
         font-size: 18px;
+        width: 100%;
+        height: 100%;
+        margin: 0px;
     }
     #scene {
         position: absolute;
@@ -10,25 +13,49 @@
         width: 100%;
         height: 100%;
         background-color: #fdf6e3;
+        background-size: 30px 30px;
+        background-image:
+            linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
     }
     #stage {
         position: absolute;
-        top: 20px;
+        top: 50px;
         right: 20px;
         width: 120px;
         height: 90vh;
         overflow-x: scroll;
-        border: 2px dashed;
+        border: 1px dashed;
         z-index: 2;
         background-color: #eee8d5;
     }
     .nodeInStage {
         position: relative;
-        margin: 5px;
+        margin: 10px;
     }
     .nodeInScene {
         position: absolute;
     }
+    #path {
+        background-color: #eee8d5;
+        font-size: 12px;
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        margin: 0px;
+        padding: 6px 10px 6px 10px;
+    }
+    #save {
+        font-family: monospace;
+        position: absolute;
+        top: 10px;
+        right: 62px;
+        background-color: #eee8d5;
+        border: none;
+        box-shadow: 2px 2px rgba(120, 120, 120, 0.9);
+        text-decoration: none;
+    }
+
 </style>
 
 <div id="scene"></div>
@@ -36,14 +63,38 @@
 
 <script src="./math.js"></script>
 <script src="./canvas.js"></script>
-<script>
 
+<script>
 const scene = new Scene(document.getElementById("scene"));
 const stage = new Stage(document.getElementById("stage"));
 
 let ws = new WebSocket("ws://localhost:1234/ws");
 ws.onmessage = e => {
-    const {files, layout} = JSON.parse(e.data);
+    const {files, layout, path} = JSON.parse(e.data);
+
+    const createTitle = (path) => {
+        const p = document.createElement("p");
+        p.setAttribute("id", "path");
+        p.innerHTML = `CS_Store > ${path}`;
+        p.style.zIndex = 5;
+        document.body.appendChild(p);
+    }
+
+    const createSaveButton = () => {
+        const b = document.createElement("button");
+        b.setAttribute("id", "save");
+        b.innerHTML = "Save";
+        b.onclick = () => {
+            ws.send(JSON.stringify({
+                "type": "layout",
+                "layout": scene.serialize(),
+            }));
+        }
+        document.body.appendChild(b);
+    }
+
+    createTitle(path);
+    createSaveButton();
 
     files.map(d => {
         stage.addNode(new Node({
@@ -55,9 +106,17 @@ ws.onmessage = e => {
             type: d.type,
         }));
     })
+
+    if (Object.keys(layout).length > 0) {
+        scene.origin = new Vec(layout.origin);
+        scene.scale = layout.scale;
+        for (const child of layout.children) {
+            scene.addNode(new Node(child))
+        }
+    }
 }
 ws.onopen = e => {
-  ws.send("initialize");
+    ws.send(JSON.stringify({"type": "initialize"}));
 }
 
 </script>

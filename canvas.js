@@ -4,8 +4,7 @@ class Node {
     this.path = path;
 
     this.elem = document.createElement("div");
-    const content = this.createContent(type, path);
-    this.elem.appendChild(content);
+    this.populateContent(type, path);
 
     // Depths:
     // 0: scene
@@ -45,22 +44,50 @@ class Node {
     return new this.constructor(this.serialize());
   }
 
-  createContent(type, path) {
+  populateContent(type, path) {
     if (type == "image/jpeg") {
       const img = document.createElement("img");
       img.style.width = "100%";
       img.src = path;
-      return img;
+      this.elem.appendChild(img);
+
+    } else if (type == "text") {
+      const p = document.createElement("p");
+      p.contentEditable = "true";
+      p.style.padding = "5px";
+      p.style.margin = "0px";
+      p.style.boxShadow = "none";
+      p.style.outlineStyle = "none";
+      p.style.borderColor = "transparent";
+      p.innerHTML = path;
+      p.onclick = () => p.focus();
+      p.onkeypress = (e) => {
+        if (e.key === "Enter") {
+          p.blur();
+        }
+      }
+      p.onkeyup = (e) => {
+        this.path = p.innerHTML;
+        this.render();
+      }
+      this.elem.style.margin = "0px";
+      this.elem.style.backgroundColor = "#eee8d5";
+      this.elem.appendChild(p);
     }
   }
 
   render() {
     const pos = scene.toViewport(this.position);
-    const w = scene.scale * this.width;
     this.elem.style.left = pos.x;
     this.elem.style.top = pos.y;
-    this.elem.style.width = w;
     this.elem.style.zIndex = this.depth;
+
+    if (this.type === "text") {
+      this.elem.style.fontSize = (scene.scale * 14) + "px";
+    } else {
+      const w = scene.scale * this.width;
+      this.elem.style.width = w;
+    }
   }
 
   getViewportPosition() {
@@ -132,13 +159,22 @@ class Scene {
     this.scale = 1;
     this.children = [];
 
-    this.elem.addEventListener("wheel", (e) => this.wheel(e))
-    this.elem.addEventListener("gesturestart", (e) => e.preventDefault())
-    this.elem.addEventListener("gesturechange", (e) => this.gesturechange(e))
-    this.elem.addEventListener("gestureend", (e) => e.preventDefault())
-    this.elem.addEventListener("mousedown", (e) => e.preventDefault())
-    this.elem.addEventListener("mousemove", (e) => e.preventDefault())
-    this.elem.addEventListener("mouseup", (e) => e.preventDefault())
+    this.elem.addEventListener("wheel", (e) => this.wheel(e));
+    this.elem.addEventListener("gesturestart", (e) => e.preventDefault());
+    this.elem.addEventListener("gesturechange", (e) => this.gesturechange(e));
+    this.elem.addEventListener("gestureend", (e) => e.preventDefault());
+    this.elem.addEventListener("mousedown", (e) => e.preventDefault());
+    this.elem.addEventListener("mousemove", (e) => e.preventDefault());
+    this.elem.addEventListener("mouseup", (e) => e.preventDefault());
+    this.elem.addEventListener("dblclick", (e) => this.dblclick(e));
+  }
+
+  serialize() {
+    return {
+      origin: this.origin,
+      scale: this.scale,
+      children: this.children.map(c => c.serialize()),
+    }
   }
 
   toViewport(x) {
@@ -195,6 +231,20 @@ class Scene {
     const delta = b.sub(a);
     this.origin = this.origin.sub(delta);
     this.render();
+  }
+
+  dblclick(e) {
+    const click = new Vec({x: e.clientX, y: e.clientY});
+    const pos = scene.toAbsolute(click);
+
+    scene.addNode(new Node({
+      x: pos.x - 100,
+      y: pos.y - 30,
+      w: 200,
+      h: 100,
+      type: "text",
+      path: "Click to edit."
+    }))
   }
 }
 
