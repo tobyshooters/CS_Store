@@ -27,6 +27,7 @@ class Node {
     this.elem.addEventListener("mousedown", (e) => this.mousedown(e));
     this.elem.addEventListener('mousemove', (e) => this.mousemove(e));
     this.elem.addEventListener('mouseup', (e) => this.mouseup(e));
+    this.elem.addEventListener("dblclick", (e) => this.dblclick(e));
   }
 
   serialize() {
@@ -45,11 +46,18 @@ class Node {
   }
 
   populateContent(type, path) {
-    if (type == "image/jpeg") {
+    if (type == "image/jpeg" || type == "image/png") {
       const img = document.createElement("img");
       img.style.width = "100%";
       img.src = path;
       this.elem.appendChild(img);
+
+    } else if (type == "video/mp4") {
+      const video = document.createElement("video");
+      video.controls = true;
+      video.style.width = "100%";
+      video.src = path;
+      this.elem.appendChild(video);
 
     } else if (type == "text") {
       const p = document.createElement("p");
@@ -150,6 +158,12 @@ class Node {
       this.depth = 1;
     }
   }
+
+  dblclick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    scene.removeNode(this);
+  }
 }
 
 class Scene {
@@ -234,12 +248,12 @@ class Scene {
   }
 
   dblclick(e) {
-    const click = new Vec({x: e.clientX, y: e.clientY});
+    const click = new Vec({x: e.clientX - 10, y: e.clientY - 10});
     const pos = scene.toAbsolute(click);
 
     scene.addNode(new Node({
-      x: pos.x - 100,
-      y: pos.y - 30,
+      x: pos.x,
+      y: pos.y,
       w: 200,
       h: 100,
       type: "text",
