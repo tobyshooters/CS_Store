@@ -1,65 +1,63 @@
 <style>
     body {
-        margin: 0px;
-        height: 100%;
         font-family: monospace;
         font-size: 18px;
-        overflow: hidden;
-        background-color: #fdf6e3;
     }
-    #container {
-        width: 100%;
-        display: flex;
-        flex-direction: row;
-    }
-    #stage {
-        width: 300px;
-        height: 90vh;
-        background-color: #eee8d5;
-        overflow-x: scroll;
-        padding: 20px;
-        margin: 20px;
-        border: 2px dashed;
-        z-index: 1000000;
-    }
-    #canvas {
-        position: relative;
+    #scene {
+        position: absolute;
+        top: 0px;
+        left: 0px;
         width: 100%;
         height: 100%;
+        background-color: #fdf6e3;
+    }
+    #stage {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 120px;
+        height: 90vh;
+        overflow-x: scroll;
+        border: 2px dashed;
+        z-index: 2;
+        background-color: #eee8d5;
+    }
+    .nodeInStage {
+        position: relative;
+        margin: 5px;
+    }
+    .nodeInScene {
+        position: absolute;
     }
 </style>
 
-<div id="container">
-    <div id="canvas"></div>
-    <div id="stage"></div>
-</div>
+<div id="scene"></div>
+<div id="stage"></div>
 
-<script src="./canvas-v2.js"></script>
+<script src="./math.js"></script>
+<script src="./canvas-v3.js"></script>
 <script>
-let layout = [
-    {
-        path: "_DSF3464.jpg",
-        type: "image/jpeg",
-        x: 50,
-        y: 50,
-        z: 2,
-        w: 200,
-    },
-    {
-        path: "_DSF2796.jpg",
-        type: "image/jpeg",
-        x: 50,
-        y: 300,
-        z: 1,
-        w: 200,
-    }
-]
 
-const canvas = document.getElementById("canvas");
-const scene = new Scene(canvas);
-window.scene = scene;
+const scene = new Scene(document.getElementById("scene"));
+const stage = new Stage(document.getElementById("stage"));
 
-scene.addNode(new Node(layout[0]));
-scene.addNode(new Node(layout[1]));
+let ws = new WebSocket("ws://localhost:1234/ws");
+ws.onmessage = e => {
+    const {files, layout} = JSON.parse(e.data);
+
+    files.map(d => {
+        stage.addNode(new Node({
+            x: 0,
+            y: 0,
+            z: 1,
+            w: 200,
+            path: d.path,
+            type: d.type,
+        }));
+    })
+}
+ws.onopen = e => {
+  ws.send("initialize");
+}
 
 </script>

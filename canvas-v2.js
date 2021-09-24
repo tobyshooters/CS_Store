@@ -1,47 +1,18 @@
-class Vec {
-  constructor({x, y, z=0}) {
-    this.x = x;
-    this.y = y;
-    this.z = z;
-  }
-  add(other) {
-    return new Vec({x: this.x + other.x, y: this.y + other.y, z: this.z + other.z});
-  }
-  times(c) {
-    return new Vec({x: c * this.x, y: c * this.y, z: c * this.z});
-  }
-  sub(other) {
-    return this.add(other.times(-1));
-  }
-}
-
-const clamp = (x, min, max) =>
-  Math.min(Math.max(x, min), max)
-
-const pointerFromEvent = (e) => {
-  // const rect = e.target.getBoundingClientRect();
-  return new Vec({
-    x: e.clientX, // - rect.left,
-    y: e.clientY, // - rect.top
-  });
-}
-
 class Scene {
-  constructor(canvas) {
-    this.canvas = canvas;
+  constructor(elem, stage) {
+    this.elem = elem;
+    this.stage = stage;
     this.origin = new Vec({x: 0, y: 0});
     this.scale = 1;
     this.children = [];
 
-    this.canvas.addEventListener("wheel", (e) => this.wheel(e))
-    this.canvas.addEventListener("gesturestart", (e) => this.gesturestart(e))
-    this.canvas.addEventListener("gesturechange", (e) => this.gesturechange(e))
-    this.canvas.addEventListener("gestureend", (e) => this.gestureend(e))
+    this.elem.addEventListener("wheel", (e) => this.wheel(e))
+    this.elem.addEventListener("gesturestart", (e) => this.gesturestart(e))
+    this.elem.addEventListener("gesturechange", (e) => this.gesturechange(e))
+    this.elem.addEventListener("gestureend", (e) => this.gestureend(e))
+    this.elem.addEventListener("dblclick", (e) => this.dblclick(e))
 
-    this.canvas.addEventListener("click", (e) => {
-      const pointer = pointerFromEvent(e);
-      console.log("CLICK", pointer, this.toAbsolute(pointer));
-    })
+    this.postScroll = null;
   }
 
   toViewport(x) {
@@ -52,8 +23,18 @@ class Scene {
     return x.times(1/this.scale).add(this.origin);
   }
 
+  inStage(v) {
+    const bbox = this.stage.getBoundingClientRect();
+    return (
+      bbox.left < v.x &&
+      v.x < bbox.right &&
+      bbox.top < v.y &&
+      v.y < bbox.bottom
+    );
+  }
+
   addNode(node) {
-    this.canvas.appendChild(node.elem);
+    this.elem.appendChild(node.elem);
     this.children.push(node);
     node.scene = this;
     node.render();
@@ -69,7 +50,10 @@ class Scene {
     } else {
       const delta = new Vec({x: -e.deltaX, y: -e.deltaY});
       this.origin = this.origin.add(delta);
-      this.children.map(c => c.render());
+      this.children.filter(c => !c.inStage).map(c => c.render());
+      this.children.filter(c => c.inStage).map(c => {
+        c.position = this.toAbsolute(c.getViewportPosition());
+      });
     }
   }
 
@@ -79,7 +63,7 @@ class Scene {
 
   gesturechange(e) {
     e.preventDefault();
-    const pointer = pointerFromEvent(e);
+    const pointer = new Vec({x: e.clientX, y: e.clientY});
     const a = this.toAbsolute(pointer);
 
     // Resize the canvas
@@ -92,11 +76,21 @@ class Scene {
     this.origin = this.origin.sub(delta);
 
     // Render all the children in the new spots
-    this.children.map(c => c.render());
+    // For staged children, keep the viewport, but update the absolute position.
+    this.children.filter(c => !c.inStage).map(c => c.render());
+    this.children.filter(c => c.inStage).map(c => {
+      c.position = this.toAbsolute(c.getViewportPosition());
+    });
   }
 
   gestureend(e) {
     e.preventDefault();
+  }
+
+  dblclick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
   }
 }
 
@@ -107,27 +101,36 @@ class Node {
     const content = this.createContent(type, path);
     this.elem.appendChild(content);
 
-    this.elem.addEventListener("mousedown", (e) => this.mousedown(e));
-    this.elem.addEventListener('mousemove', (e) => this.mousemove(e));
-    this.elem.addEventListener('mouseup', (e) => this.mouseup(e));
+    // Depths:
+    // 0: scene
+    // 1: items in scene
+    // 2: stage
+    // 3: items in stage
+    // 4: item in focus
 
     // Positioning and rendering
     this.scene = null;
     this.position = new Vec({x: x, y: y});
     this.width = w;
+    this.depth = z;
+    this.inStage = false;
+    this.stageWidth = 120;
 
     // Interaction helpers
     this.dragging = false;
     this.click = null;
-  }
 
+    this.elem.addEventListener("mousedown", (e) => this.mousedown(e));
+    this.elem.addEventListener('mousemove', (e) => this.mousemove(e));
+    this.elem.addEventListener('mouseup', (e) => this.mouseup(e));
+  }
 
   serialize() {
     return {
-      x: this.x,
-      y: this.y,
-      z: this.z,
-      w: this.w,
+      x: this.position.x,
+      y: this.position.y,
+      z: this.depth,
+      w: this.width,
       type: this.type,
       path: this.path
     }
@@ -144,10 +147,11 @@ class Node {
 
   render() {
     const pos = this.scene.toViewport(this.position);
-    const w = this.scene.scale * this.width;
+    const w = this.inStage ? this.stageWidth : this.scene.scale * this.width;
     this.elem.style.left = pos.x;
     this.elem.style.top = pos.y;
     this.elem.style.width = w;
+    this.elem.style.zIndex = this.depth;
   }
 
   getViewportPosition() {
@@ -174,6 +178,9 @@ class Node {
 
     this.dragging = true;
     this.click = new Vec({x: e.clientX, y: e.clientY});
+
+    this.depth = 4;
+    this.render();
   }
 
   mousemove(e) {
@@ -186,6 +193,32 @@ class Node {
   }
 
   mouseup(e) {
-    this.dragging = false;
+    if (this.dragging) {
+      this.dragging = false;
+
+      const click = new Vec({x: e.clientX, y: e.clientY});
+      if (this.scene.inStage(click)) {
+        this.inStage = true;
+
+        const nodePos = this.getViewportPosition();
+        const nodeBox = this.elem.getBoundingClientRect();
+        const stageBox = this.scene.stage.getBoundingClientRect();
+
+        this.setViewportPosition(new Vec({
+          x: Math.min(click.x, stageBox.left + (stageBox.width - this.stageWidth) / 2),
+          y: nodeBox.y,
+        }));
+        this.render();
+
+      } else {
+        this.inStage = false;
+        this.render();
+      }
+    }
+
+    this.scene.children.map(c => {
+      c.depth = c.inStage ? 3 : 1;
+      c.render();
+    })
   }
 }
