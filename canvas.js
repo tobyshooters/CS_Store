@@ -2,9 +2,7 @@ class Node {
   constructor({x, y, z, w, type, path}) {
     this.type = type;
     this.path = path;
-
-    this.elem = document.createElement("div");
-    this.populateContent(type, path);
+    this.inStage = false;
 
     // Depths:
     // 0: scene
@@ -13,12 +11,13 @@ class Node {
     // 3: items in stage
     // 4: item in focus
 
+    this.elem = document.createElement("div");
+
     // Positioning and rendering
     this.position = new Vec({x, y});
-    this.width = w;
     this.depth = z;
-    this.inStage = false;
-    this.stageWidth = 120;
+    this.ratio = 1;
+    this.populateContent(type, path);
 
     // Interaction helpers
     this.dragging = false;
@@ -35,7 +34,7 @@ class Node {
       x: this.position.x,
       y: this.position.y,
       z: this.depth,
-      w: this.width,
+      w: this.size,
       type: this.type,
       path: this.path
     }
@@ -49,6 +48,9 @@ class Node {
     if (type == "image/jpeg" || type == "image/png") {
       const img = document.createElement("img");
       img.style.width = "100%";
+      img.onload = () => {
+        this.ratio = img.width / img.height;
+      }
       img.src = path;
       this.elem.appendChild(img);
 
@@ -56,7 +58,11 @@ class Node {
       const video = document.createElement("video");
       video.controls = true;
       video.style.width = "100%";
+      video.onload = () => {
+        this.ratio = img.width / img.height;
+      }
       video.src = path;
+      this.elem.style.width = this.size;
       this.elem.appendChild(video);
 
     } else if (type == "text") {
@@ -78,6 +84,7 @@ class Node {
         this.path = p.innerHTML;
         this.render();
       }
+      this.elem.style.width = this.size;
       this.elem.style.margin = "0px";
       this.elem.style.backgroundColor = "#eee8d5";
       this.elem.appendChild(p);
@@ -93,8 +100,8 @@ class Node {
     if (this.type === "text") {
       this.elem.style.fontSize = (scene.scale * 14) + "px";
     } else {
-      const w = scene.scale * this.width;
-      this.elem.style.width = w;
+      this.elem.style.width = this.width * scene.scale;
+      this.elem.style.height = this.height * scene.scale;
     }
   }
 
@@ -116,6 +123,16 @@ class Node {
     this.setViewportPosition(pos.add(delta));
   }
 
+  setSizeToScale() {
+    if (this.ratio > 1) {
+      this.width = 200 / scene.scale;
+      this.height = this.width * this.ratio;
+    } else {
+      this.height = 200 / scene.scale;
+      this.width = this.height / this.ratio;
+    }
+  }
+
   mousedown(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -126,6 +143,8 @@ class Node {
     if (this.inStage) {
       const copy = this.clone();
       copy.depth = 4;
+
+      copy.setSizeToScale();
 
       const rect = this.elem.getBoundingClientRect();
       const pos = new Vec({

@@ -70,6 +70,15 @@
 const scene = new Scene(document.getElementById("scene"));
 const stage = new Stage(document.getElementById("stage"));
 
+<!-- stage.addNode(new Node({ -->
+<!--     x: 0, -->
+<!--     y: 0, -->
+<!--     z: 1, -->
+<!--     w: 200, -->
+<!--     path: "test.jpg", -->
+<!--     type: "image/jpeg", -->
+<!-- })); -->
+
 let ws = new WebSocket("ws://localhost:1234/ws");
 ws.onmessage = e => {
     const {files, layout, path} = JSON.parse(e.data);
@@ -120,5 +129,4 @@ ws.onmessage = e => {
 ws.onopen = e => {
     ws.send(JSON.stringify({"type": "initialize"}));
 }
-
 </script>

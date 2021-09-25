@@ -39,16 +39,13 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
 
 if __name__ == "__main__":
-    print(FILE_PATH, SRC_PATH)
+    print("Files:", FILE_PATH)
+    print("Code:", SRC_PATH)
+
     app = tornado.web.Application([
         (r'/ws', WSHandler),
-        (r'/static/(.*)', tornado.web.StaticFileHandler, {
-            "path": SRC_PATH,
-            "default_filename": "index.html"
-        }), 
-        (r'/files/(.*)', tornado.web.StaticFileHandler, {
-            "path": FILE_PATH
-        }), 
+        (r'/static/(.*)', tornado.web.StaticFileHandler, { "path": SRC_PATH      }),
+        (r'/files/(.*)',  tornado.web.StaticFileHandler, { "path": FILE_PATH     }),
     ])
     app.listen(1234)
     tornado.ioloop.IOLoop.current().start()
