@@ -1,5 +1,5 @@
 class Node {
-  constructor({x, y, z, w, type, path}) {
+  constructor({x, y, z, h = null, w = null, type, path}) {
     this.type = type;
     this.path = path;
     this.inStage = false;
@@ -16,6 +16,8 @@ class Node {
     // Positioning and rendering
     this.position = new Vec({x, y});
     this.depth = z;
+    this.height = h;
+    this.width = w;
     this.ratio = 1;
     this.populateContent(type, path);
 
@@ -34,7 +36,8 @@ class Node {
       x: this.position.x,
       y: this.position.y,
       z: this.depth,
-      w: this.size,
+      h: this.height,
+      w: this.width,
       type: this.type,
       path: this.path
     }
@@ -68,11 +71,7 @@ class Node {
     } else if (type == "text") {
       const p = document.createElement("p");
       p.contentEditable = "true";
-      p.style.padding = "5px";
-      p.style.margin = "0px";
-      p.style.boxShadow = "none";
-      p.style.outlineStyle = "none";
-      p.style.borderColor = "transparent";
+      p.classList.add("textNode");
       p.innerHTML = path;
       p.onclick = () => p.focus();
       p.onkeypress = (e) => {
@@ -84,7 +83,9 @@ class Node {
         this.path = p.innerHTML;
         this.render();
       }
-      this.elem.style.width = this.size;
+      this.height = 14 / scene.scale;
+      this.width = 200 / scene.scale;
+
       this.elem.style.margin = "0px";
       this.elem.style.backgroundColor = "#eee8d5";
       this.elem.appendChild(p);
@@ -98,7 +99,8 @@ class Node {
     this.elem.style.zIndex = this.depth;
 
     if (this.type === "text") {
-      this.elem.style.fontSize = (scene.scale * 14) + "px";
+      this.elem.style.fontSize = (this.height * scene.scale) + "px";
+      this.elem.style.width = (this.width * scene.scale) + "px";
     } else {
       this.elem.style.width = this.width * scene.scale;
       this.elem.style.height = this.height * scene.scale;
@@ -241,7 +243,16 @@ class Scene {
     e.preventDefault();
 
     if (e.ctrlKey) {
-      // TODO: handle zoom in Chrome
+      const pointer = new Vec({x: e.clientX, y: e.clientY});
+      const a = this.toAbsolute(pointer);
+
+      this.scale = clamp(this.scale - 0.01 * e.deltaY, 0.3, 3.0);
+
+      // Re-position so mouse remains where it was
+      const b = this.toAbsolute(pointer);
+      const delta = b.sub(a);
+      this.origin = this.origin.sub(delta);
+      this.render();
 
     } else {
       const delta = new Vec({x: -e.deltaX, y: -e.deltaY});
@@ -256,7 +267,7 @@ class Scene {
     const a = this.toAbsolute(pointer);
 
     // Resize the canvas
-    const factor = 1 + 0.05 * (e.scale - 1);
+    const factor = 1 + 0.1 * (e.scale - 1);
     this.scale = clamp(this.scale * factor, 0.3, 3.0);
 
     // Re-position so mouse remains where it was
