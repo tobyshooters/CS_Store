@@ -16,10 +16,12 @@ class Node {
     // Positioning and rendering
     this.position = new Vec({x, y});
     this.depth = z;
-    this.height = h;
     this.width = w;
+    this.height = h;
     this.ratio = 1;
-    this.populateContent(type, path);
+
+    const content = this.populateContent(type, path);
+    this.elem.appendChild(content);
 
     // Interaction helpers
     this.dragging = false;
@@ -55,7 +57,7 @@ class Node {
         this.ratio = img.width / img.height;
       }
       img.src = path;
-      this.elem.appendChild(img);
+      return img;
 
     } else if (type == "video/mp4") {
       const video = document.createElement("video");
@@ -65,8 +67,13 @@ class Node {
         this.ratio = img.width / img.height;
       }
       video.src = path;
-      this.elem.style.width = this.size;
-      this.elem.appendChild(video);
+      return video;
+
+    } else if (type == "application/pdf") {
+      const pdf = document.createElement("iframe");
+      this.ratio = 1 / 1.4142;
+      pdf.src = path;
+      return pdf;
 
     } else if (type == "text") {
       const p = document.createElement("p");
@@ -88,7 +95,7 @@ class Node {
 
       this.elem.style.margin = "0px";
       this.elem.style.backgroundColor = "#eee8d5";
-      this.elem.appendChild(p);
+      return p;
     }
   }
 
@@ -99,11 +106,21 @@ class Node {
     this.elem.style.zIndex = this.depth;
 
     if (this.type === "text") {
-      this.elem.style.fontSize = (this.height * scene.scale) + "px";
       this.elem.style.width = (this.width * scene.scale) + "px";
+      this.elem.style.fontSize = (this.height * scene.scale) + "px";
     } else {
       this.elem.style.width = this.width * scene.scale;
       this.elem.style.height = this.height * scene.scale;
+    }
+  }
+
+  setSizeToScale() {
+    if (this.ratio > 1) {
+      this.width = 200 / scene.scale;
+      this.height = this.width / this.ratio;
+    } else {
+      this.height = 200 / scene.scale;
+      this.width = this.height * this.ratio;
     }
   }
 
@@ -125,16 +142,6 @@ class Node {
     this.setViewportPosition(pos.add(delta));
   }
 
-  setSizeToScale() {
-    if (this.ratio > 1) {
-      this.width = 200 / scene.scale;
-      this.height = this.width * this.ratio;
-    } else {
-      this.height = 200 / scene.scale;
-      this.width = this.height / this.ratio;
-    }
-  }
-
   mousedown(e) {
     e.preventDefault();
     e.stopPropagation();
@@ -145,7 +152,7 @@ class Node {
     if (this.inStage) {
       const copy = this.clone();
       copy.depth = 4;
-
+      copy.ratio = this.ratio;
       copy.setSizeToScale();
 
       const rect = this.elem.getBoundingClientRect();
