@@ -77,8 +77,24 @@
 const scene = new Scene(document.getElementById("scene"));
 const stage = new Stage(document.getElementById("stage"));
 
+const resetCanvas = () => {
+    for (const child of scene.children) {
+      scene.elem.removeChild(child.elem);
+      scene.children = [];
+    }
+
+    for (const child of stage.children) {
+      stage.elem.removeChild(child.elem);
+      stage.children = [];
+    }
+
+    const title = document.getElementById("path");
+    if (title) title.remove();
+}
+
 let ws = new WebSocket("ws://localhost:1234/ws");
 ws.onmessage = e => {
+    resetCanvas();
     const {files, layout, path} = JSON.parse(e.data);
 
     const createTitle = (path) => {
@@ -111,8 +127,7 @@ ws.onmessage = e => {
             y: 0,
             z: 1,
             w: 200,
-            path: d.path,
-            type: d.type,
+            data: d,
         }));
     })
 

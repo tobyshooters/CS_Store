@@ -1,8 +1,10 @@
 class Node {
-  constructor({x, y, z, h = null, w = null, type, path}) {
-    this.type = type;
-    this.path = path;
+  constructor({x, y, z, h = null, w = null, data}) {
+    this.data = data;
+    this.type = data.type;
+    this.path = data.path;
     this.inStage = false;
+    this.elem = document.createElement("div");
 
     // Depths:
     // 0: scene
@@ -11,8 +13,6 @@ class Node {
     // 3: items in stage
     // 4: item in focus
 
-    this.elem = document.createElement("div");
-
     // Positioning and rendering
     this.position = new Vec({x, y});
     this.depth = z;
@@ -20,7 +20,7 @@ class Node {
     this.height = h;
     this.ratio = 1;
 
-    const content = this.populateContent(type, path);
+    const content = this.populateContent(data);
     this.elem.appendChild(content);
 
     // Interaction helpers
@@ -30,7 +30,10 @@ class Node {
     this.elem.addEventListener("mousedown", (e) => this.mousedown(e));
     this.elem.addEventListener('mousemove', (e) => this.mousemove(e));
     this.elem.addEventListener('mouseup', (e) => this.mouseup(e));
-    this.elem.addEventListener("dblclick", (e) => this.dblclick(e));
+    this.elem.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
   }
 
   serialize() {
@@ -40,8 +43,7 @@ class Node {
       z: this.depth,
       h: this.height,
       w: this.width,
-      type: this.type,
-      path: this.path
+      data: this.data,
     }
   }
 
@@ -49,8 +51,10 @@ class Node {
     return new this.constructor(this.serialize());
   }
 
-  populateContent(type, path) {
-    if (type == "image/jpeg" || type == "image/png") {
+  populateContent(data) {
+    let {type, path} = data;
+
+    if (type === "image/jpeg" || type === "image/png") {
       const img = document.createElement("img");
       img.style.width = "100%";
       img.onload = () => {
@@ -59,7 +63,7 @@ class Node {
       img.src = path;
       return img;
 
-    } else if (type == "video/mp4") {
+    } else if (type === "video/mp4") {
       const video = document.createElement("video");
       video.controls = true;
       video.style.width = "100%";
@@ -69,13 +73,14 @@ class Node {
       video.src = path;
       return video;
 
-    } else if (type == "application/pdf") {
+    } else if (type === "application/pdf") {
       const pdf = document.createElement("iframe");
-      this.ratio = 1 / 1.4142;
+      pdf.style.width = "100%";
+      this.ratio = 1 / 1.2941;
       pdf.src = path;
       return pdf;
 
-    } else if (type == "text") {
+    } else if (type === "text") {
       const p = document.createElement("p");
       p.contentEditable = "true";
       p.classList.add("textNode");
@@ -96,6 +101,27 @@ class Node {
       this.elem.style.margin = "0px";
       this.elem.style.backgroundColor = "#eee8d5";
       return p;
+
+    } else if (type === "dir") {
+      const p = document.createElement("p");
+      p.style.fontSize = 10;
+      p.style.border = "1px black dotted"
+      p.style.padding = 20;
+      p.style.textAlign = "center";
+      p.style.wordBreak = "break-all";
+      p.innerHTML = path;
+
+      p.ondblclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        ws.send(JSON.stringify({
+          "type": "cd",
+          "path": data.absolute,
+        }));
+      }
+
+      return p
     }
   }
 
@@ -146,6 +172,11 @@ class Node {
     e.preventDefault();
     e.stopPropagation();
 
+    if (e.altKey) {
+      scene.removeNode(this);
+      return;
+    }
+
     this.dragging = true;
     this.click = new Vec({x: e.clientX, y: e.clientY});
 
@@ -185,12 +216,6 @@ class Node {
       this.render();
       this.depth = 1;
     }
-  }
-
-  dblclick(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    scene.removeNode(this);
   }
 }
 

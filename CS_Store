@@ -6,6 +6,6 @@ conda activate env
 python3 ~/dev/CS_Store/server.py "$PWD" &
 PID=$!
 trap "kill $PID" EXIT
-echo 'CTRL+C to kill'
+echo 'CTRL + C to kill'
 open http://localhost:1234/static/index.html
 while :; do sleep 1; done
