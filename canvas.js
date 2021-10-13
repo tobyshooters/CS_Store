@@ -104,7 +104,6 @@ class Node {
 
     } else if (type === "dir") {
       const p = document.createElement("p");
-      p.style.fontSize = 10;
       p.style.border = "1px black dotted"
       p.style.padding = 20;
       p.style.textAlign = "center";
@@ -131,7 +130,7 @@ class Node {
     this.elem.style.top = pos.y;
     this.elem.style.zIndex = this.depth;
 
-    if (this.type === "text") {
+    if (this.type === "text" || this.type === "dir") {
       this.elem.style.width = (this.width * scene.scale) + "px";
       this.elem.style.fontSize = (this.height * scene.scale) + "px";
     } else {
@@ -318,8 +317,10 @@ class Scene {
       y: pos.y,
       w: 200,
       h: 100,
-      type: "text",
-      path: "Click to edit."
+      data: {
+        type: "text",
+        path: "Click to edit."
+      }
     }))
   }
 }
