@@ -19,6 +19,7 @@ class Node {
     this.width = w;
     this.height = h;
     this.ratio = 1;
+    this.padding = 0;
 
     const content = this.populateContent(data);
     this.elem.appendChild(content);
@@ -95,21 +96,18 @@ class Node {
         this.path = p.innerHTML;
         this.render();
       }
-      this.height = 14 / scene.scale;
-      this.width = 200 / scene.scale;
-
-      this.elem.style.margin = "0px";
-      this.elem.style.backgroundColor = "#eee8d5";
+      this.height = 20;
+      this.width = 100;
+      this.padding = 5;
       return p;
 
     } else if (type === "dir") {
       const p = document.createElement("p");
       p.style.border = "1px black dotted"
-      p.style.padding = 20;
+      p.style.padding = 10;
       p.style.textAlign = "center";
       p.style.wordBreak = "break-all";
       p.innerHTML = path;
-
       p.ondblclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -119,7 +117,9 @@ class Node {
           "path": data.absolute,
         }));
       }
-
+      this.height = 20;
+      this.width = 160;
+      this.padding = 5;
       return p
     }
   }
@@ -129,14 +129,10 @@ class Node {
     this.elem.style.left = pos.x;
     this.elem.style.top = pos.y;
     this.elem.style.zIndex = this.depth;
-
-    if (this.type === "text" || this.type === "dir") {
-      this.elem.style.width = (this.width * scene.scale) + "px";
-      this.elem.style.fontSize = (this.height * scene.scale) + "px";
-    } else {
-      this.elem.style.width = this.width * scene.scale;
-      this.elem.style.height = this.height * scene.scale;
-    }
+    this.elem.style.height = (this.height * scene.scale) + "px";
+    this.elem.style.width = (this.width * scene.scale) + "px";
+    this.elem.style.fontSize = Math.floor(12 * scene.scale) + "px";
+    this.elem.style.padding = (this.padding * scene.scale) + "px";
   }
 
   setSizeToScale() {
