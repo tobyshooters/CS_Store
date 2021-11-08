@@ -1,5 +1,5 @@
 class Node {
-  constructor({x, y, z, h = null, w = null, data}) {
+  constructor({x, y, z, h = null, w = null, fontSize, data}) {
     this.data = data;
     this.type = data.type;
     this.path = data.path;
@@ -20,6 +20,7 @@ class Node {
     this.height = h;
     this.ratio = 1;
     this.padding = 0;
+    this.fontSize = fontSize;
 
     const content = this.populateContent(data);
     this.elem.appendChild(content);
@@ -44,6 +45,7 @@ class Node {
       z: this.depth,
       h: this.height,
       w: this.width,
+      fontSize: this.fontSize,
       data: this.data,
     }
   }
@@ -96,8 +98,7 @@ class Node {
         this.path = p.innerHTML;
         this.render();
       }
-      this.height = 20;
-      this.width = 100;
+      this.ratio = 5;
       this.padding = 5;
       return p;
 
@@ -131,18 +132,8 @@ class Node {
     this.elem.style.zIndex = this.depth;
     this.elem.style.height = (this.height * scene.scale) + "px";
     this.elem.style.width = (this.width * scene.scale) + "px";
-    this.elem.style.fontSize = Math.floor(12 * scene.scale) + "px";
+    this.elem.style.fontSize = Math.floor(this.fontSize * scene.scale) + "px";
     this.elem.style.padding = (this.padding * scene.scale) + "px";
-  }
-
-  setSizeToScale() {
-    if (this.ratio > 1) {
-      this.width = 200 / scene.scale;
-      this.height = this.width / this.ratio;
-    } else {
-      this.height = 200 / scene.scale;
-      this.width = this.height * this.ratio;
-    }
   }
 
   getViewportPosition() {
@@ -179,7 +170,14 @@ class Node {
       const copy = this.clone();
       copy.depth = 4;
       copy.ratio = this.ratio;
-      copy.setSizeToScale();
+
+      if (copy.ratio > 1) {
+        copy.width = 200 / scene.scale;
+        copy.height = copy.width / copy.ratio;
+      } else {
+        copy.height = 200 / scene.scale;
+        copy.width = copy.height * copy.ratio;
+      }
 
       const rect = this.elem.getBoundingClientRect();
       const pos = new Vec({
@@ -308,16 +306,18 @@ class Scene {
     const click = new Vec({x: e.clientX - 10, y: e.clientY - 10});
     const pos = scene.toAbsolute(click);
 
-    scene.addNode(new Node({
+    const node = new Node({
       x: pos.x,
       y: pos.y,
-      w: 200,
-      h: 100,
+      w: 300 / scene.scale,
+      h: 10 / scene.scale,
+      fontSize: 24 / scene.scale,
       data: {
         type: "text",
         path: "Click to edit."
       }
-    }))
+    });
+    scene.addNode(node);
   }
 }
 
