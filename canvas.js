@@ -85,9 +85,14 @@ class Node {
 
     } else if (type === "text") {
       const p = document.createElement("p");
-      p.contentEditable = "true";
-      p.classList.add("textNode");
       p.innerHTML = path;
+      p.classList.add("textNode");
+      this.ratio = 5;
+      this.width = this.width || 160;
+      this.height = this.width / this.ratio;
+
+      p.contentEditable = "true";
+
       p.onclick = () => p.focus();
       p.onkeypress = (e) => {
         if (e.key === "Enter") {
@@ -98,29 +103,25 @@ class Node {
         this.path = p.innerHTML;
         this.render();
       }
-      this.ratio = 5;
-      this.padding = 5;
       return p;
 
     } else if (type === "dir") {
       const p = document.createElement("p");
-      p.style.border = "1px black dotted"
-      p.style.padding = 10;
-      p.style.textAlign = "center";
-      p.style.wordBreak = "break-all";
       p.innerHTML = path;
+      p.classList.add("dirNode");
+      this.ratio = 3;
+      this.width = this.width || 100;
+      this.height = this.width / this.ratio;
+
       p.ondblclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-
         ws.send(JSON.stringify({
           "type": "cd",
           "path": data.absolute,
         }));
       }
-      this.height = 20;
-      this.width = 160;
-      this.padding = 5;
+
       return p
     }
   }
@@ -130,8 +131,8 @@ class Node {
     this.elem.style.left = pos.x;
     this.elem.style.top = pos.y;
     this.elem.style.zIndex = this.depth;
-    this.elem.style.height = (this.height * scene.scale) + "px";
     this.elem.style.width = (this.width * scene.scale) + "px";
+    this.elem.style.height = (this.height * scene.scale) + "px";
     this.elem.style.fontSize = Math.floor(this.fontSize * scene.scale) + "px";
     this.elem.style.padding = (this.padding * scene.scale) + "px";
   }
@@ -169,8 +170,8 @@ class Node {
     if (this.inStage) {
       const copy = this.clone();
       copy.depth = 4;
-      copy.ratio = this.ratio;
 
+      copy.ratio = this.ratio;
       if (copy.ratio > 1) {
         copy.width = 200 / scene.scale;
         copy.height = copy.width / copy.ratio;
@@ -178,6 +179,8 @@ class Node {
         copy.height = 200 / scene.scale;
         copy.width = copy.height * copy.ratio;
       }
+
+      copy.fontSize = 24 / scene.scale;
 
       const rect = this.elem.getBoundingClientRect();
       const pos = new Vec({
@@ -189,8 +192,15 @@ class Node {
       copy.elem.dispatchEvent(new Event('mousedown'));
 
     } else {
-      this.depth = 4;
-      this.render();
+
+      if (e.shiftKey) {
+        scene.removeNode(this);
+        this.elem.remove();
+
+      } else {
+        this.depth = 4;
+        this.render();
+      }
     }
   }
 
