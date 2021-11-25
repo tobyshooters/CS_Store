@@ -17,20 +17,22 @@ def get_state():
     files = [{ "path": f"/files/{f}", "type": t } for f, t in listing if t in VALID_TYPES]
 
     user_dirs = [f for f in all_files if os.path.isdir(f) and f[0] != "."]
-    directories = [
+    directories = sorted([
         {
             "type": "dir", 
             "path": f,
             "absolute": os.path.join(FILE_PATH, f)
         } 
         for f in user_dirs
-    ]
+    ], key=lambda x: x["path"].lower())
 
-    directories.append({
+    parent = {
         "type": "dir", 
         "path": "parent",
         "absolute": os.path.split(FILE_PATH)[0],
-    })
+    }
+
+    directories = [parent] + directories
 
     layout = {}
     if ".CS_Store" in all_files:
@@ -38,7 +40,7 @@ def get_state():
             layout = json.loads(f.read())
 
     return { 
-        "files": [*files, *directories], 
+        "files": [*directories, *files], 
         "layout": layout,
         "path": FILE_PATH,
     }

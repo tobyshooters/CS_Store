@@ -34,7 +34,7 @@
         position: absolute;
         top: 20px;
         right: 20px;
-        width: 120px;
+        width: 150px;
         height: 95vh;
         overflow-x: scroll;
         border: 1px solid;
@@ -297,12 +297,19 @@ class Node {
       })
 
       // Create a new copy
+      const sizes = this.ratio > 1 ? {
+        w: 200 / scene.scale,
+        h: (200 / scene.scale) / this.ratio,
+      } : {
+        w: this.ratio * 200 / scene.scale,
+        h: (200 / scene.scale),
+      };
+      
       const copy = new this.constructor({
         x: null,
         y: null,
         z: 4,
-        w: 200 / scene.scale,
-        h: (200 / scene.scale) / this.ratio,
+        ...sizes,
         fontSize: 14 / scene.scale,
         padding: 8 /scene.scale,
         borderRadius: 5 /scene.scale,
@@ -407,7 +414,7 @@ class Scene {
       const pointer = new Vec({x: e.clientX, y: e.clientY});
       const a = this.toAbsolute(pointer);
 
-      this.scale = clamp(this.scale - 0.01 * e.deltaY, 0.3, 3.0);
+      this.scale = clamp(this.scale - 0.01 * e.deltaY, 0.1, 3.0);
 
       // Re-position so mouse remains where it was
       const b = this.toAbsolute(pointer);
@@ -416,7 +423,7 @@ class Scene {
       this.render();
 
     } else {
-      const delta = new Vec({x: -e.deltaX, y: -e.deltaY});
+      const delta = new Vec({x: -e.deltaX, y: -e.deltaY}).times(1 / this.scale);
       this.origin = this.origin.add(delta);
       this.render();
     }
@@ -428,8 +435,8 @@ class Scene {
     const a = this.toAbsolute(pointer);
 
     // Resize the canvas
-    const factor = 1 + 0.1 * (e.scale - 1);
-    this.scale = clamp(this.scale * factor, 0.3, 3.0);
+    const factor = 1 + 0.2 * (e.scale - 1);
+    this.scale = clamp(this.scale * factor, 0.1, 3.0);
 
     // Re-position so mouse remains where it was
     const b = this.toAbsolute(pointer);
