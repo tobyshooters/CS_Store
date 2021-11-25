@@ -46,9 +46,11 @@
         position: relative;
         margin: 10px;
         z-index: 3;
+        cursor: grab;
     }
     .nodeInScene {
         position: absolute;
+        cursor: move;
     }
     .textNode {
         margin: 0px;
@@ -73,7 +75,11 @@
 <div id="scene"></div>
 <div id="stage"></div>
 
+<script src="/static/pdf-js/pdf.js"></script>
+
 <script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/pdf-js/pdf.worker.js';
+
 const clamp = (x, min, max) =>
   Math.min(Math.max(x, min), max)
 
@@ -184,6 +190,12 @@ class Node {
     this.content.style.fontSize = Math.floor(this.fontSize * scene.scale) + "px";
     this.content.style.padding = (this.padding * scene.scale) + "px";
     this.content.style.borderRadius = (this.borderRadius * scene.scale) + "px";
+
+    if (this.type === "application/pdf") {
+      // Have to resize the canvas!
+      // this.content.style.width = (this.width * scene.scale) + "px";
+      // this.content.style.height = (this.height * scene.scale) + "px";
+    }
   }
 
   populateContent(data) {
@@ -209,13 +221,25 @@ class Node {
       return video;
 
     } else if (type === "application/pdf") {
-      const pdf = document.createElement("iframe");
-      pdf.src = path;
-      this.ratio = 1 / 1.2941;
-      pdf.style.backgroundColor = "#eee8d5";
-      pdf.style.borderColor = "transparent";
-      pdf.style.width = "100%";
-      return pdf;
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      (async () => {
+        const pdf = await pdfjsLib.getDocument(path).promise;
+        const page = await pdf.getPage(1);
+
+        const scale = 130 / page.getViewport({scale: 1}).width;
+        const viewport = page.getViewport({scale});
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({
+          canvasContext: ctx,
+          viewport: viewport
+        });
+      })()
+
+      return canvas;
 
     } else if (type === "text") {
       const p = document.createElement("p");
@@ -285,10 +309,7 @@ class Node {
     this.dragging = true;
     this.click = new Vec({x: e.clientX, y: e.clientY});
 
-    let print = false;
     if (this.inStage) {
-      print = true;
-      console.log("BEFORE", this);
       // Position on scene
       const rect = this.elem.getBoundingClientRect();
       const pos = new Vec({
@@ -332,7 +353,6 @@ class Node {
         this.render();
       }
     }
-    if (print) console.log("AFTER", this);
   }
 
   mousemove(e) {
