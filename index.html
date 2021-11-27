@@ -44,7 +44,7 @@
     }
     .nodeInStage {
         position: relative;
-        margin: 10px;
+        margin: 10px 15px;
         z-index: 3;
         cursor: grab;
     }
@@ -139,11 +139,12 @@ class Node {
     this.depth = z;
     this.width = w;
     this.height = h;
-    this.ratio = w / h;
     this.padding = padding;
     this.fontSize = fontSize;
     this.borderRadius = borderRadius;
+    this.ratio = w / h;
 
+    // Populate div and set ratio
     this.content = this.populateContent(data);
     this.elem.appendChild(this.content);
 
@@ -190,12 +191,6 @@ class Node {
     this.content.style.fontSize = Math.floor(this.fontSize * scene.scale) + "px";
     this.content.style.padding = (this.padding * scene.scale) + "px";
     this.content.style.borderRadius = (this.borderRadius * scene.scale) + "px";
-
-    if (this.type === "application/pdf") {
-      // Have to resize the canvas!
-      // this.content.style.width = (this.width * scene.scale) + "px";
-      // this.content.style.height = (this.height * scene.scale) + "px";
-    }
   }
 
   populateContent(data) {
@@ -224,21 +219,88 @@ class Node {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
 
+      canvas.style.width = "100%";
+
       (async () => {
         const pdf = await pdfjsLib.getDocument(path).promise;
-        const page = await pdf.getPage(1);
 
-        const scale = 130 / page.getViewport({scale: 1}).width;
-        const viewport = page.getViewport({scale});
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
+        const renderPage = async (n) => {
+          const page = await pdf.getPage(n);
 
-        await page.render({
-          canvasContext: ctx,
-          viewport: viewport
-        });
+          const scale = 1000 / page.getViewport({scale: 1}).width;
+          const viewport = page.getViewport({scale});
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+
+          await page.render({
+            canvasContext: ctx,
+            viewport: viewport
+          });
+        }
+
+        // Hack: when we first create a PDF, i.e. in stage, page is not defined
+        // yet so we render some buttons for page selection.  When we clone to
+        // add to the stage, the property is set, so the buttons dissappear.
+
+        if (this.data.page === undefined) {
+          this.data.page = 1;
+
+          const center = document.createElement("center");
+          center.style.marginTop = "5px";
+
+          const pageLabel = document.createElement("span");
+          pageLabel.style.padding = "10px";
+          pageLabel.innerHTML = this.data.page;
+
+          const previous = document.createElement("button");
+          previous.style.border = "solid 1px darkgrey";
+          previous.style.outline = "none";
+          previous.style.borderRadius = "5px";
+          previous.style.backgroundColor = "#eee8e7";
+          previous.style.height = "20px";
+          previous.style.width = "30px";
+
+          previous.innerHTML = "<";
+          previous.addEventListener("mousedown", e => {
+            e.stopPropagation();
+            this.data.page = this.data.page - 1;
+            if (this.data.page < 1) {
+              this.data.page = pdf.numPages;
+            }
+            pageLabel.innerHTML = this.data.page;
+            renderPage(this.data.page);
+          });
+
+          const next = document.createElement("button");
+          next.style.border = "solid 1px darkgrey";
+          next.style.outline = "none";
+          next.style.borderRadius = "5px";
+          next.style.backgroundColor = "#eee8e7";
+          next.style.height = "20px";
+          next.style.width = "30px";
+
+          next.innerHTML = ">";
+          next.addEventListener("mousedown", e => {
+            e.stopPropagation();
+            this.data.page = this.data.page + 1;
+            if (this.data.page > pdf.numPages) {
+              this.data.page = 1;
+            }
+            pageLabel.innerHTML = this.data.page;
+            renderPage(this.data.page);
+          });
+
+          center.appendChild(previous);
+          center.appendChild(pageLabel);
+          center.appendChild(next);
+          this.elem.appendChild(center);
+        }
+
+        renderPage(this.data.page);
       })()
 
+      this.ratio = 1 / 1.29;
+      this.height = this.width / this.ratio;
       return canvas;
 
     } else if (type === "text") {
@@ -248,11 +310,11 @@ class Node {
       this.ratio = 5;
 
       p.contentEditable = "true";
-      p.onclick = () => p.focus();
-      p.onkeypress = (e) => {
-        if (e.key === "Enter") {
+      p.onclick = () => {
+        p.focus();
+        document.addEventListener("mousedown", e => {
           p.blur();
-        }
+        })
       }
       p.onkeyup = (e) => {
         this.path = p.innerHTML;
@@ -264,7 +326,7 @@ class Node {
       const p = document.createElement("p");
       p.innerHTML = path;
       p.classList.add("dirNode");
-      this.ratio = 3;
+      this.ratio = 1;
 
       p.ondblclick = (e) => {
         e.preventDefault();
@@ -319,11 +381,11 @@ class Node {
 
       // Create a new copy
       const sizes = this.ratio > 1 ? {
-        w: 200 / scene.scale,
-        h: (200 / scene.scale) / this.ratio,
-      } : {
         w: this.ratio * 200 / scene.scale,
         h: (200 / scene.scale),
+      } : {
+        w: 200 / scene.scale,
+        h: (200 / scene.scale) / this.ratio,
       };
       
       const copy = new this.constructor({
@@ -472,9 +534,9 @@ class Scene {
     const node = new Node({
       x: pos.x,
       y: pos.y,
-      w: 300 / scene.scale,
+      w: 360 / scene.scale,
       h: 10 / scene.scale,
-      fontSize: 24 / scene.scale,
+      fontSize: 14 / scene.scale,
       padding: 10 / scene.scale,
       borderRadius: 5 / scene.scale,
       data: {
@@ -548,6 +610,22 @@ ws.onmessage = e => {
     p.setAttribute("id", "path");
     p.innerHTML = `CS_Store > ${path}`;
     p.style.zIndex = 5;
+    p.classList.add("textNode");
+    p.contentEditable = "true";
+    p.onclick = () => {
+      p.focus();
+      p.innerHTML = path;
+    }
+    p.onkeypress = (e) => {
+      if (e.key === "Enter") {
+        p.blur();
+        
+        ws.send(JSON.stringify({
+          "type": "cd",
+          "path": p.innerHTML,
+        }));
+      }
+    }
     document.body.appendChild(p);
 
     // Populate stage with listing
@@ -556,7 +634,6 @@ ws.onmessage = e => {
             x: 0,
             y: 0,
             z: 4,
-            w: 200,
             data: d,
         }));
     })
