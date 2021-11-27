@@ -8,7 +8,7 @@ import tornado.websocket
 
 FILE_PATH = os.getcwd()
 SRC_PATH = os.path.dirname(__file__)
-VALID_TYPES = ["image/png", "image/jpeg", "video/mp4", "application/pdf"]
+VALID_TYPES = ["image/png", "image/jpeg", "video/mp4", "application/pdf", "audio/mpeg"]
 
 def get_state():
     all_files = os.listdir(FILE_PATH)

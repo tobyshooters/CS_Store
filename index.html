@@ -160,10 +160,6 @@ class Node {
       document.addEventListener('mouseup', this.boundMouseUp);
       this.mousedown(e)
     });
-    this.elem.addEventListener('dblclick', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
   }
 
   serialize() {
@@ -204,6 +200,15 @@ class Node {
       }
       img.src = path;
       return img;
+
+    } else if (type === "audio/mpeg") {
+      const audio = document.createElement("audio");
+      audio.style.width = "100%";
+      audio.preload = "auto";
+      audio.controls = true;
+      audio.src = path;
+      this.ratio = 1;
+      return audio
 
     } else if (type === "video/mp4") {
       const video = document.createElement("video");
@@ -310,15 +315,15 @@ class Node {
       this.ratio = 5;
 
       p.contentEditable = "true";
-      p.onclick = () => {
+      p.addEventListener("dblclick", (e) => {
         p.focus();
         document.addEventListener("mousedown", e => {
+          this.data.path = p.innerHTML;
           p.blur();
         })
-      }
+      });
       p.onkeyup = (e) => {
-        this.path = p.innerHTML;
-        this.render();
+        this.data.path = p.innerHTML;
       }
       return p;
 
@@ -505,9 +510,31 @@ class Scene {
       this.render();
 
     } else {
-      const delta = new Vec({x: -e.deltaX, y: -e.deltaY}).times(1 / this.scale);
+      const delta = new Vec({x: e.deltaX, y: e.deltaY}).times(1 / this.scale);
       this.origin = this.origin.add(delta);
       this.render();
+    }
+
+    const {width, height} = this.elem.getBoundingClientRect();
+    for (const child of this.children) {
+      child.depth = 1;
+      child.render();
+
+      if (child.type.split("/")[0] == "audio") {
+        const pos = scene.toViewport(child.position);
+        const childWidth = parseInt(child.elem.style.width.slice(0, -2));
+        const childHeight = parseInt(child.elem.style.height.slice(0, -2));
+        if (
+          pos.x + childWidth > 0 &&
+          pos.x < width &&
+          pos.y + childHeight > 0 &&
+          pos.y < height
+        ) {
+          child.content.play()
+        } else {
+          child.content.pause();
+        }
+      }
     }
   }
 
@@ -534,14 +561,15 @@ class Scene {
     const node = new Node({
       x: pos.x,
       y: pos.y,
-      w: 360 / scene.scale,
+      w: 220 / scene.scale,
       h: 10 / scene.scale,
+      z: 4,
       fontSize: 14 / scene.scale,
       padding: 10 / scene.scale,
       borderRadius: 5 / scene.scale,
       data: {
         type: "text",
-        path: "Click to edit."
+        path: "Double-click to edit."
       }
     });
     scene.addNode(node);
