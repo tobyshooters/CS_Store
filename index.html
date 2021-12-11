@@ -75,10 +75,10 @@
 <div id="scene"></div>
 <div id="stage"></div>
 
-<script src="/static/pdf-js/pdf.js"></script>
+<script src="/static/deps/pdf.js"></script>
 
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/pdf-js/pdf.worker.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/deps/pdf.worker.js';
 
 const clamp = (x, min, max) =>
   Math.min(Math.max(x, min), max)

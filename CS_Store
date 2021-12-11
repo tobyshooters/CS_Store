@@ -1,8 +1,5 @@
 #!/bin/sh
 
-source "$(conda info --base)/etc/profile.d/conda.sh"
-conda activate env
-
 python3 ~/dev/CS_Store/server.py "$PWD" &
 PID=$!
 trap "kill $PID" EXIT
