@@ -14,12 +14,12 @@ An infinite canvas for your filesystem.
 
 ### Installation
 1. Make sure you have the packages in `requirements.txt` installed
-2. Add `CS_Store` to your path or move it to a bin in your path.
-3. Run `CS_Store`!
+2. Add `display` to your path or move it to a bin in your path.
+3. Run `display`!
 
 
 ### To Do:
 1. Grid that scales with zoom.
 2. Watch for changes to the `.CS_Store`
-3. Make `CS_Store` cleaner with pixel rounding
+3. Make `.CS_Store` cleaner with pixel rounding
 4. Make audio playback cleaner, particularly pre-interaction

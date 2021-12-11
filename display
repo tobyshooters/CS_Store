@@ -5,5 +5,5 @@ PID=$!
 trap "kill $PID" EXIT
 echo 'CTRL + C to kill'
 sleep 0.1
-open http://localhost:1234/static/index.html
+chromium http://localhost:1234/static/index.html
 while :; do sleep 1; done
