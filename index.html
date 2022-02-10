@@ -83,6 +83,8 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = '/static/deps/pdf.worker.js';
 const clamp = (x, min, max) =>
   Math.min(Math.max(x, min), max)
 
+const round = (x, n=0) => 10**(-n) * Math.round(x * 10**n);
+
 class Vec {
   constructor({x, y, z=0}) {
     this.x = x;
@@ -114,13 +116,11 @@ class Vec {
 }
 
 class Node {
-  constructor({
-    x, y, z, h = null, w = null, 
-    fontSize,
-    padding, 
-    borderRadius,
-    data
-  }) {
+  constructor({ render, data }) {
+    const { 
+      x, y, z, w = null, h = null, fontSize, padding, borderRadius
+    } = render;
+
     this.data = data;
     this.type = data.type;
     this.path = data.path;
@@ -139,10 +139,10 @@ class Node {
     this.depth = z;
     this.width = w;
     this.height = h;
+    this.ratio = w / h;
     this.padding = padding;
     this.fontSize = fontSize;
     this.borderRadius = borderRadius;
-    this.ratio = w / h;
 
     // Populate div and set ratio
     this.content = this.populateContent(data);
@@ -163,7 +163,7 @@ class Node {
   }
 
   serialize() {
-    return {
+    let render = {
       x: this.position.x,
       y: this.position.y,
       z: this.depth,
@@ -172,7 +172,13 @@ class Node {
       fontSize: this.fontSize,
       padding: this.padding,
       borderRadius: this.borderRadius,
+    }
+    for (const key of Object.keys(render)) {
+      render[key] = round(render[key], 2);
+    }
+    return {
       data: this.data,
+      render: render,
     }
   }
 
@@ -187,6 +193,8 @@ class Node {
     this.content.style.fontSize = Math.floor(this.fontSize * scene.scale) + "px";
     this.content.style.padding = (this.padding * scene.scale) + "px";
     this.content.style.borderRadius = (this.borderRadius * scene.scale) + "px";
+    this.content.style.width = (this.width * scene.scale) + "px";
+    this.content.style.height = (this.height * scene.scale) + "px";
   }
 
   populateContent(data) {
@@ -316,6 +324,7 @@ class Node {
 
       p.contentEditable = "true";
       p.addEventListener("dblclick", (e) => {
+        e.stopPropagation();
         p.focus();
         document.addEventListener("mousedown", e => {
           this.data.path = p.innerHTML;
@@ -331,7 +340,7 @@ class Node {
       const p = document.createElement("p");
       p.innerHTML = path;
       p.classList.add("dirNode");
-      this.ratio = 1;
+      this.ratio = 10.0;
 
       p.ondblclick = (e) => {
         e.preventDefault();
@@ -386,21 +395,23 @@ class Node {
 
       // Create a new copy
       const sizes = this.ratio > 1 ? {
+        w: 200 / scene.scale,
+        h: 200 / scene.scale / this.ratio,
+      } : {
         w: this.ratio * 200 / scene.scale,
         h: (200 / scene.scale),
-      } : {
-        w: 200 / scene.scale,
-        h: (200 / scene.scale) / this.ratio,
       };
       
       const copy = new this.constructor({
-        x: null,
-        y: null,
-        z: 4,
-        ...sizes,
-        fontSize: 14 / scene.scale,
-        padding: 8 /scene.scale,
-        borderRadius: 5 /scene.scale,
+        render: {
+          x: null,
+          y: null,
+          z: 4,
+          ...sizes,
+          fontSize: 14 / scene.scale,
+          padding: 8 /scene.scale,
+          borderRadius: 5 /scene.scale,
+        },
         data: this.data,
       });
       copy.position = scene.toAbsolute(this.click.sub(pos));
@@ -461,8 +472,9 @@ class Scene {
 
   serialize() {
     return {
-      origin: this.origin,
-      scale: this.scale,
+      x: round(this.origin.x, 2),
+      y: round(this.origin.y, 2),
+      scale: round(this.scale, 2),
       children: this.children.map(c => c.serialize()),
     }
   }
@@ -559,18 +571,20 @@ class Scene {
     const pos = scene.toAbsolute(click);
 
     const node = new Node({
-      x: pos.x,
-      y: pos.y,
-      w: 220 / scene.scale,
-      h: 10 / scene.scale,
-      z: 4,
-      fontSize: 14 / scene.scale,
-      padding: 10 / scene.scale,
-      borderRadius: 5 / scene.scale,
       data: {
         type: "text",
         path: "Double-click to edit."
-      }
+      },
+      render: {
+        x: pos.x,
+        y: pos.y,
+        w: 220 / scene.scale,
+        h: 16 / scene.scale,
+        z: 4,
+        fontSize: 14 / scene.scale,
+        padding: 10 / scene.scale,
+        borderRadius: 5 / scene.scale,
+      },
     });
     scene.addNode(node);
   }
@@ -647,7 +661,6 @@ ws.onmessage = e => {
     p.onkeypress = (e) => {
       if (e.key === "Enter") {
         p.blur();
-        
         ws.send(JSON.stringify({
           "type": "cd",
           "path": p.innerHTML,
@@ -659,16 +672,17 @@ ws.onmessage = e => {
     // Populate stage with listing
     files.map(d => {
         stage.addNode(new Node({
-            x: 0,
-            y: 0,
-            z: 4,
             data: d,
+            render: { x: 0, y: 0, z: 4, },
         }));
     })
 
     // Populate scene with layout
     if (Object.keys(layout).length > 0) {
-        scene.origin = new Vec(layout.origin);
+        scene.origin = new Vec({
+            x: layout.x,
+            y: layout.y,
+        });
         scene.scale = layout.scale;
         for (const child of layout.children) {
             scene.addNode(new Node(child))

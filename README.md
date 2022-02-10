@@ -23,3 +23,4 @@ An infinite canvas for your filesystem.
 2. Watch for changes to the `.CS_Store`
 3. Make `.CS_Store` cleaner with pixel rounding
 4. Make audio playback cleaner, particularly pre-interaction
+5. Display `.txt` files

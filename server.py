@@ -61,7 +61,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         elif message["type"] == "cd":
             FILE_PATH = message["path"]
             os.chdir(FILE_PATH)
-            server.restart()
+            server.redirect()
             self.write_message(json.dumps(get_state()))
 
 
@@ -78,7 +78,7 @@ class Server:
         self.server = self.app.listen(1234)
         tornado.ioloop.IOLoop.current().start()
 
-    def restart(self):
+    def redirect(self):
         global FILE_PATH, SRC_PATH
         
         self.app.default_router.rules = []
