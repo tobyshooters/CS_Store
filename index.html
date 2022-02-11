@@ -36,7 +36,7 @@
         right: 20px;
         width: 150px;
         height: 95vh;
-        overflow-x: scroll;
+        overflow-x: hidden;
         border: 1px solid;
         border-radius: 3px;
         z-index: 2;
@@ -657,6 +657,11 @@ ws.onmessage = e => {
     p.onclick = () => {
       p.focus();
       p.innerHTML = path;
+      const range = document.createRange();
+      range.selectNodeContents(p);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
     }
     p.onkeypress = (e) => {
       if (e.key === "Enter") {
