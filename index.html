@@ -214,7 +214,7 @@ class Node {
       audio.controls = true;
       audio.autoplay = playAudio;
       audio.src = path;
-      this.ratio = 1;
+      this.ratio = 5;
       return audio
 
     } else if (type === "video/mp4") {
@@ -419,8 +419,6 @@ class Node {
         data: this.data,
       });
       copy.position = scene.toAbsolute(this.click.sub(pos));
-
-        console.log("COPU", copy)
       scene.addNode(copy);
 
       // Continue moving the copy
@@ -538,7 +536,7 @@ class Scene {
       child.depth = 1;
       child.render();
 
-      if (child.type.split("/")[0] == "audio") {
+      if (playAudio && child.type.split("/")[0] == "audio") {
         const pos = scene.toViewport(child.position);
         const childWidth = parseInt(child.elem.style.width.slice(0, -2));
         const childHeight = parseInt(child.elem.style.height.slice(0, -2));
