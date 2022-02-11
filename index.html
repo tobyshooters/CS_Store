@@ -193,8 +193,6 @@ class Node {
     this.content.style.fontSize = Math.floor(this.fontSize * scene.scale) + "px";
     this.content.style.padding = (this.padding * scene.scale) + "px";
     this.content.style.borderRadius = (this.borderRadius * scene.scale) + "px";
-    this.content.style.width = (this.width * scene.scale) + "px";
-    this.content.style.height = (this.height * scene.scale) + "px";
   }
 
   populateContent(data) {
@@ -214,6 +212,7 @@ class Node {
       audio.style.width = "100%";
       audio.preload = "auto";
       audio.controls = true;
+      audio.autoplay = playAudio;
       audio.src = path;
       this.ratio = 1;
       return audio
@@ -326,6 +325,11 @@ class Node {
       p.addEventListener("dblclick", (e) => {
         e.stopPropagation();
         p.focus();
+        const range = document.createRange();
+        range.selectNodeContents(p);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
         document.addEventListener("mousedown", e => {
           this.data.path = p.innerHTML;
           p.blur();
@@ -401,7 +405,7 @@ class Node {
         w: this.ratio * 200 / scene.scale,
         h: (200 / scene.scale),
       };
-      
+
       const copy = new this.constructor({
         render: {
           x: null,
@@ -415,6 +419,8 @@ class Node {
         data: this.data,
       });
       copy.position = scene.toAbsolute(this.click.sub(pos));
+
+        console.log("COPU", copy)
       scene.addNode(copy);
 
       // Continue moving the copy
@@ -624,6 +630,7 @@ class Stage {
 </script>
 
 <script>
+let playAudio = false;
 const scene = new Scene(document.getElementById("scene"));
 const stage = new Stage(document.getElementById("stage"));
 
@@ -632,12 +639,10 @@ const resetCanvas = () => {
       scene.elem.removeChild(child.elem);
       scene.children = [];
     }
-
     for (const child of stage.children) {
       stage.elem.removeChild(child.elem);
       stage.children = [];
     }
-
     const title = document.getElementById("path");
     if (title) title.remove();
 }
@@ -673,6 +678,24 @@ ws.onmessage = e => {
       }
     }
     document.body.appendChild(p);
+    
+    // Enable audio button
+    const btn = document.createElement("button");
+    btn.onclick = () => { 
+        playAudio = true; 
+        for (const child of scene.children) {
+            if (child.data.type === "audio/mpeg" ) {
+                child.content.play();
+            }
+        }
+        btn.style.display = "none";
+    }
+    btn.innerHTML = "Enable audio";
+    btn.style.zIndex = 5;
+    btn.style.position = "absolute";
+    btn.style.left = 10;
+    btn.style.bottom = 10;
+    document.body.appendChild(btn);
 
     // Populate stage with listing
     files.map(d => {
