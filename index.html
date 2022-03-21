@@ -24,11 +24,10 @@
         left: 0px;
         width: 100%;
         height: 100%;
-        background-color: #fdf6e3;
         background-size: 30px 30px;
-        background-image:
-            linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+        background: conic-gradient(from 90deg at 1px 1px, #fdf6e3 90deg, #eee8d5 0deg);
+        background-position: 0px 0px;
+        background-size: 100px 100px;
     }
     #stage {
         position: absolute;
@@ -112,6 +111,20 @@ class Vec {
     return this.x * other.x
          + this.y * other.y
          + this.z * other.z;
+  }
+  mod(n) {
+    return new Vec({
+      x: this.x % n,
+      y: this.y % n,
+      z: this.z % n,
+    })
+  }
+  abs() {
+    return new Vec({
+      x: Math.abs(this.x),
+      y: Math.abs(this.y),
+      z: Math.abs(this.z),
+    })
   }
 }
 
@@ -506,6 +519,10 @@ class Scene {
   }
 
   render() {
+    const size = 200 * this.scale;
+    const pos = this.origin.abs().times(this.scale);
+    this.elem.style.backgroundSize = `${size}px ${size}px`;
+    this.elem.style.backgroundPosition = `${pos.x} ${pos.y}`;
     this.children.map(c => c.render());
   }
 
@@ -643,6 +660,9 @@ const resetCanvas = () => {
     }
     const title = document.getElementById("path");
     if (title) title.remove();
+
+    const audio = document.getElementById("audio");
+    if (audio) audio.remove();
 }
 
 let ws = new WebSocket("ws://localhost:1234/ws");
@@ -679,16 +699,25 @@ ws.onmessage = e => {
     
     // Enable audio button
     const btn = document.createElement("button");
+    btn.setAttribute("id", "audio");
     btn.onclick = () => { 
-        playAudio = true; 
-        for (const child of scene.children) {
-            if (child.data.type === "audio/mpeg" ) {
-                child.content.play();
+        if (playAudio) {
+            playAudio = false;
+            for (const child of scene.children) {
+                if (child.data.type === "audio/mpeg" ) {
+                    child.content.pause();
+                }
+            }
+        } else {
+            playAudio = true; 
+            for (const child of scene.children) {
+                if (child.data.type === "audio/mpeg" ) {
+                    child.content.play();
+                }
             }
         }
-        btn.style.display = "none";
     }
-    btn.innerHTML = "Enable audio";
+    btn.innerHTML = "Toggle audio";
     btn.style.zIndex = 5;
     btn.style.position = "absolute";
     btn.style.left = 10;
@@ -713,6 +742,7 @@ ws.onmessage = e => {
         for (const child of layout.children) {
             scene.addNode(new Node(child))
         }
+        scene.render();
     }
 }
 ws.onopen = e => {

@@ -10,39 +10,37 @@ FILE_PATH = os.getcwd()
 SRC_PATH = os.path.dirname(__file__)
 VALID_TYPES = ["image/png", "image/jpeg", "video/mp4", "application/pdf", "audio/mpeg"]
 
-def get_state():
-    all_files = os.listdir(FILE_PATH)
-
-    listing = [(f, mimetypes.guess_type(f)[0]) for f in all_files]
-    files = [{ "path": f"/files/{f}", "type": t } for f, t in listing if t in VALID_TYPES]
-
-    user_dirs = [f for f in all_files if os.path.isdir(f) and f[0] != "."]
-    directories = sorted([
-        {
-            "type": "dir", 
-            "path": f,
-            "absolute": os.path.join(FILE_PATH, f)
-        } 
-        for f in user_dirs
-    ], key=lambda x: x["path"].lower())
-
-    parent = {
+def pwd():
+    files = [{
         "type": "dir", 
         "path": "parent",
         "absolute": os.path.split(FILE_PATH)[0],
-    }
+    }]
 
-    directories = [parent] + directories
+    listing = os.listdir(FILE_PATH)
+    for f in listing:
+        t = mimetypes.guess_type(f)[0]
+        if t in VALID_TYPES:
+            files.append({ 
+                "type": t,
+                "path": f"/files/{f}", 
+            })
+        elif os.path.isdir(f) and f[0] != ".":
+            files.append({
+                "type": "dir", 
+                "path": f,
+                "absolute": os.path.join(FILE_PATH, f)
+            })
 
     layout = {}
-    if ".CS_Store" in all_files:
+    if ".CS_Store" in listing:
         with open(f"{FILE_PATH}/.CS_Store", "r") as f:
             layout = json.loads(f.read())
 
     return { 
-        "files": [*directories, *files], 
-        "layout": layout,
         "path": FILE_PATH,
+        "files": files,
+        "layout": layout,
     }
 
 
@@ -52,7 +50,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         message = json.loads(message)
         if message["type"] == "initialize":
-            self.write_message(json.dumps(get_state()))
+            self.write_message(json.dumps(pwd()))
 
         elif message["type"] ==  "layout":
             with open(f"{FILE_PATH}/.CS_Store", "w") as f:
@@ -62,7 +60,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             FILE_PATH = message["path"]
             os.chdir(FILE_PATH)
             server.redirect()
-            self.write_message(json.dumps(get_state()))
+            self.write_message(json.dumps(pwd()))
 
 
 class Server:

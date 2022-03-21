@@ -5,5 +5,11 @@ PID=$!
 trap "kill $PID" EXIT
 echo 'CTRL + C to kill'
 sleep 0.1
-chromium http://localhost:1234/static/index.html
+
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    chromium http://localhost:1234/static/index.html
+else
+    open http://localhost:1234/static/index.html
+fi
+
 while :; do sleep 1; done

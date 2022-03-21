@@ -17,10 +17,6 @@ An infinite canvas for your filesystem.
 2. Add `display` to your path or move it to a bin in your path.
 3. Run `display`!
 
-
 ### To Do:
-1. Grid that scales with zoom.
-2. Watch for changes to the `.CS_Store`
-3. Make `.CS_Store` cleaner with pixel rounding
-4. Make audio playback cleaner, particularly pre-interaction
-5. Display `.txt` files
+1. Watch for changes to the `.CS_Store`
+2. Display `.txt` files
