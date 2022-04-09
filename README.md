@@ -19,4 +19,4 @@ An infinite canvas for your filesystem.
 
 ### To Do:
 1. Watch for changes to the `.CS_Store`
-2. Display `.txt` files
+2. Store text as `.txt` files, rather than in `.CS_Store`
