@@ -20,5 +20,3 @@ An infinite canvas for your filesystem.
 ### To Do:
 1. Watch for changes to the `.CS_Store`
 2. Display `.txt` files
-3. Each node stores its "creation-scale," removing the need for most of the
-   render data in .CS_Store

@@ -131,7 +131,7 @@ class Vec {
 class Node {
   constructor({ render, data }) {
     const { 
-      x, y, z, w = null, h = null, fontSize, padding, borderRadius
+      x, y, z, w = null, h = null, creationScale,
     } = render;
 
     this.data = data;
@@ -153,9 +153,10 @@ class Node {
     this.width = w;
     this.height = h;
     this.ratio = w / h;
-    this.padding = padding;
-    this.fontSize = fontSize;
-    this.borderRadius = borderRadius;
+    this.creationScale = creationScale;
+    this.padding = 8 / creationScale;
+    this.fontSize = 14 / creationScale;
+    this.borderRadius = 5 / creationScale;
 
     // Populate div and set ratio
     this.content = this.populateContent(data);
@@ -182,9 +183,7 @@ class Node {
       z: this.depth,
       h: this.height,
       w: this.width,
-      fontSize: this.fontSize,
-      padding: this.padding,
-      borderRadius: this.borderRadius,
+      creationScale: this.creationScale,
     }
     for (const key of Object.keys(render)) {
       render[key] = round(render[key], 2);
@@ -425,9 +424,7 @@ class Node {
           y: null,
           z: 4,
           ...sizes,
-          fontSize: 14 / scene.scale,
-          padding: 8 /scene.scale,
-          borderRadius: 5 /scene.scale,
+          creationScale: scene.scale,
         },
         data: this.data,
       });
@@ -602,9 +599,7 @@ class Scene {
         w: 220 / scene.scale,
         h: 16 / scene.scale,
         z: 4,
-        fontSize: 14 / scene.scale,
-        padding: 10 / scene.scale,
-        borderRadius: 5 / scene.scale,
+        creationScale: scene.scale,
       },
     });
     scene.addNode(node);
