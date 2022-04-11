@@ -11,6 +11,7 @@ An infinite canvas for your filesystem.
    in pixel width. To add a small comment, zoom-in to the context it concerns.
 4. Audio as region: Sound files are played when visible in the canvas. Drop a
    file in to function as a soundtrack for a region of space.
+5. Export to an .html with image files in a zip.
 
 ### Installation
 1. Make sure you have the packages in `requirements.txt` installed
@@ -20,3 +21,4 @@ An infinite canvas for your filesystem.
 ### To Do:
 1. Watch for changes to the `.CS_Store`
 2. Store text as `.txt` files, rather than in `.CS_Store`
+3. Export button to generate `.zip`
