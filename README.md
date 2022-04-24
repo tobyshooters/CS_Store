@@ -22,3 +22,4 @@ An infinite canvas for your filesystem.
 1. Watch for changes to the `.CS_Store`
 2. Store text as `.txt` files, rather than in `.CS_Store`
 3. Export button to generate `.zip`
+4. Fix jittering on zoom-in on Safari
