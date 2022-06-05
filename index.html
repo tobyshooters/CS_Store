@@ -519,7 +519,7 @@ class Scene {
     const size = 200 * this.scale;
     const pos = this.origin.abs().times(this.scale);
     this.elem.style.backgroundSize = `${size}px ${size}px`;
-    this.elem.style.backgroundPosition = `${pos.x} ${pos.y}`;
+    this.elem.style.backgroundPosition = `${-pos.x} ${-pos.y}`;
     this.children.map(c => c.render());
   }
 
